@@ -1,1 +1,114 @@
 // app global css in Sass form
+@import 'variables.css'
+
+// 設置全局字體
+body
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif
+  -webkit-font-smoothing: antialiased
+  -moz-osx-font-smoothing: grayscale
+
+// Global utility classes
+.text
+  &-xss
+    font-size: var(--font-size-xss)
+  &-xs
+    font-size: var(--font-size-xs)
+  &-sm
+    font-size: var(--font-size-sm)
+  &-md
+    font-size: var(--font-size-md)
+  &-lg
+    font-size: var(--font-size-lg)
+  &-xl
+    font-size: var(--font-size-xl)
+  &-2xl
+    font-size: var(--font-size-2xl)
+  &-3xl
+    font-size: var(--font-size-3xl)
+  &-4xl
+    font-size: var(--font-size-4xl)
+  &-5xl
+    font-size: var(--font-size-5xl)
+  &-6xl
+    font-size: var(--font-size-6xl)
+  &-7xl
+    font-size: var(--font-size-7xl)
+  &-8xl
+    font-size: var(--font-size-8xl)
+  &-9xl
+    font-size: var(--font-size-9xl)
+
+// Color utility classes
+.bg
+  &-gray
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--gray-#{$suffix})
+  &-teal
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--teal-#{$suffix})
+  &-green
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--green-#{$suffix})
+  &-yellow
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--yellow-#{$suffix})
+  &-amber
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--amber-#{$suffix})
+  &-orange
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--orange-#{$suffix})
+  &-red
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        background-color: var(--red-#{$suffix})
+
+.text
+  &-gray
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--gray-#{$suffix})
+  &-teal
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--teal-#{$suffix})
+  &-green
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--green-#{$suffix})
+  &-yellow
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--yellow-#{$suffix})
+  &-amber
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--amber-#{$suffix})
+  &-orange
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--orange-#{$suffix})
+  &-red
+    @for $i from 0 through 9
+      $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
+      &-#{$suffix}
+        color: var(--red-#{$suffix})
