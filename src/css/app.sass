@@ -112,3 +112,58 @@ body
       $suffix: if($i == 0, "0", if($i == 1, "50", #{$i}00))
       &-#{$suffix}
         color: var(--red-#{$suffix})
+
+:root
+  // Colors
+  --gray-0: #{$gray-0}
+  --gray-50: #{$gray-50}
+  --gray-100: #{$gray-100}
+  --gray-200: #{$gray-200}
+  --gray-300: #{$gray-300}
+  --gray-400: #{$gray-400}
+  --gray-500: #{$gray-500}
+  --gray-600: #{$gray-600}
+  --gray-700: #{$gray-700}
+  --gray-800: #{$gray-800}
+  --gray-900: #{$gray-900}
+
+  --teal-0: #{$teal-0}
+  --teal-50: #{$teal-50}
+  --teal-100: #{$teal-100}
+  --teal-200: #{$teal-200}
+  --teal-300: #{$teal-300}
+  --teal-400: #{$teal-400}
+  --teal-500: #{$teal-500}
+  --teal-600: #{$teal-600}
+  --teal-700: #{$teal-700}
+  --teal-800: #{$teal-800}
+  --teal-900: #{$teal-900}
+
+  // Font sizes
+  --font-size-xss: #{$text-xss}
+  --font-size-xs: #{$text-xs}
+  --font-size-sm: #{$text-sm}
+  --font-size-md: #{$text-md}
+  --font-size-lg: #{$text-lg}
+  --font-size-xl: #{$text-xl}
+  --font-size-2xl: #{$text-2xl}
+  --font-size-3xl: #{$text-3xl}
+  --font-size-4xl: #{$text-4xl}
+  --font-size-5xl: #{$text-5xl}
+  --font-size-6xl: #{$text-6xl}
+  --font-size-7xl: #{$text-7xl}
+  --font-size-8xl: #{$text-8xl}
+  --font-size-9xl: #{$text-9xl}
+
+// Global button styles
+// TODO: Temporary solution for button text transform
+// This is a workaround to prevent Quasar buttons from automatically transforming text to uppercase
+// We should investigate better solutions in the future:
+// 1. Check Quasar's official documentation for recommended ways to modify button defaults
+// 2. Research if there are relevant settings in quasar.config.js
+// 3. Consider using Quasar's plugin system to modify button behavior
+// 4. Look into other global theme configuration options
+.q-btn
+  text-transform: none
+  .q-btn__content
+    text-transform: none
