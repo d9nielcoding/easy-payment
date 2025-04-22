@@ -114,8 +114,8 @@ export default defineConfig((ctx) => {
       // (like functional components as one of the examples),
       // you can manually specify Quasar components/directives to be available everywhere:
       //
-      // components: [],
-      // directives: [],
+      components: ['QDialog', 'QCard', 'QCardSection', 'QCardActions', 'QSpace', 'QBtn', 'QSlider'],
+      directives: ['ClosePopup'],
 
       // Quasar plugins
       plugins: [],
