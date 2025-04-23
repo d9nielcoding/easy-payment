@@ -1,16 +1,7 @@
-import type { Location, Reader, ProcessingFees } from 'src/types';
+import type { Location, Reader, ProcessingFees, Organization } from 'src/types';
 
+// NOTE: fallback values
 export const DEFAULT_TAX_RATE = 0.045;
-
-export const PROCESSING_FEE_RATE_RANGE = {
-  min: 0,
-  max: 3.5,
-} as const;
-
-export const PROCESSING_FEE_FIXED_RANGE = {
-  min: 0,
-  max: 0.1,
-} as const;
 
 export const DEFAULT_PROCESSING_FEE: ProcessingFees = {
   merchant: {
@@ -18,9 +9,19 @@ export const DEFAULT_PROCESSING_FEE: ProcessingFees = {
     fixed: '0.05',
   },
   patient: {
-    rate: 0,
+    rate: 2.5,
     fixed: '0.05',
   },
+} as const;
+
+export const ORGANIZATION: Organization = {
+  id: 4,
+  name: 'Nitra Clinic',
+  totalProcessingFeeFixed: 10,
+  totalProcessingFeePercentage: '0.03500',
+  createdAt: '2024-01-01T12:00:00Z',
+  updatedAt: '2024-01-01T12:00:00Z',
+  deletedAt: null,
 } as const;
 
 export const LOCATIONS: Location[] = [

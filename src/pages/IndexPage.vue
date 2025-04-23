@@ -472,11 +472,10 @@ import { deepCopy } from 'src/lib/utils';
 import ActionDialog from 'src/components/ActionDialog.vue';
 import {
   DEFAULT_TAX_RATE,
-  PROCESSING_FEE_RATE_RANGE,
-  PROCESSING_FEE_FIXED_RANGE,
   DEFAULT_PROCESSING_FEE,
   LOCATIONS,
   READERS,
+  ORGANIZATION,
 } from 'src/constants';
 
 const description = ref('');
@@ -492,6 +491,8 @@ const taxRate = computed(() => {
 });
 let cursorPosition = 0;
 
+// NOTE: Only one organization for now
+const organization = ORGANIZATION;
 const locations = LOCATIONS;
 const locationOptions: LocationOption[] = locations.map((location) => ({
   ...location,
@@ -514,8 +515,15 @@ const selectedReader = ref<Reader | null>(filteredReaderOptions.value[0] || null
 const showProcessingFeeDialog = ref(false);
 const showCreditDialog = ref(false);
 const showReaderDialog = ref(false);
-const processingFeeRateRange = ref(PROCESSING_FEE_RATE_RANGE);
-const processingFeeFixedRange = ref(PROCESSING_FEE_FIXED_RANGE);
+const processingFeeRateRange = ref({
+  min: 0,
+  // NOTE: Round to 3 decimal places, cause rate in organization is 5 decimal places
+  max: parseFloat((parseFloat(organization.totalProcessingFeePercentage) * 100).toFixed(3)),
+});
+const processingFeeFixedRange = ref({
+  min: 0,
+  max: organization.totalProcessingFeeFixed / 100,
+});
 const activeFee = ref<'merchant' | 'patient'>('merchant');
 
 const processingFees = ref<ProcessingFees>({ ...DEFAULT_PROCESSING_FEE });
@@ -538,17 +546,22 @@ const initializeFees = (): void => {
 // Initialize on component mount
 initializeFees();
 
-// Active fee value computed property
+// Modify the editingActiveFeeValue computed property
 const editingActiveFeeValue = computed({
   get: () =>
     activeFee.value === 'merchant'
       ? editingProcessingFees.value.merchant.rate
       : editingProcessingFees.value.patient.rate,
   set: (value: number) => {
+    const totalRate = processingFeeRateRange.value.max;
+    const clampedValue = Math.min(Math.max(value, 0), totalRate);
+
     if (activeFee.value === 'merchant') {
-      editingProcessingFees.value.merchant.rate = value;
+      editingProcessingFees.value.merchant.rate = parseFloat(clampedValue.toFixed(3));
+      editingProcessingFees.value.patient.rate = parseFloat((totalRate - clampedValue).toFixed(3));
     } else {
-      editingProcessingFees.value.patient.rate = value;
+      editingProcessingFees.value.patient.rate = parseFloat(clampedValue.toFixed(3));
+      editingProcessingFees.value.merchant.rate = parseFloat((totalRate - clampedValue).toFixed(3));
     }
   },
 });
@@ -713,15 +726,17 @@ const resetPayment = () => {
 const handleFixedFeeInput = (value: string, type: 'merchant' | 'patient'): void => {
   const numValue = parseFloat(value);
   if (!isNaN(numValue)) {
-    const clampedValue = Math.min(
-      Math.max(numValue, processingFeeFixedRange.value.min),
-      processingFeeFixedRange.value.max,
-    );
+    const totalFixed = processingFeeFixedRange.value.max;
+    const clampedValue = Math.min(Math.max(numValue, 0), totalFixed);
     const formattedValue = clampedValue.toFixed(2);
+    const otherValue = (totalFixed - clampedValue).toFixed(2);
+
     if (type === 'merchant') {
       editingProcessingFees.value.merchant.fixed = formattedValue;
+      editingProcessingFees.value.patient.fixed = otherValue;
     } else {
       editingProcessingFees.value.patient.fixed = formattedValue;
+      editingProcessingFees.value.merchant.fixed = otherValue;
     }
   }
 };
@@ -777,11 +792,15 @@ const formatRate = (value: number): string => {
 const handleRateInput = (value: string, type: 'merchant' | 'patient'): void => {
   const numValue = parseFloat(value);
   if (!isNaN(numValue)) {
-    const clampedValue = Math.min(Math.max(numValue, 0), 3.5);
+    const totalRate = processingFeeRateRange.value.max;
+    const clampedValue = Math.min(Math.max(numValue, 0), totalRate);
+
     if (type === 'merchant') {
       editingProcessingFees.value.merchant.rate = parseFloat(clampedValue.toFixed(2));
+      editingProcessingFees.value.patient.rate = parseFloat((totalRate - clampedValue).toFixed(2));
     } else {
       editingProcessingFees.value.patient.rate = parseFloat(clampedValue.toFixed(2));
+      editingProcessingFees.value.merchant.rate = parseFloat((totalRate - clampedValue).toFixed(2));
     }
   }
 };
