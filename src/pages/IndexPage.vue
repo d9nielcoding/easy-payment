@@ -139,7 +139,7 @@
                 />
               </div>
               <div class="text-gray-700 text-weight-medium text-xs">
-                ${{ formatAmount(editingTotalPatientFee) }}
+                ${{ formatAmount(totalPatientFee) }}
               </div>
             </div>
 
@@ -208,6 +208,7 @@
                 unelevated
                 class="full-width bg-orange-50 text-orange-500 payment-btn"
                 padding="sm"
+                @click="openCreditDialog"
               >
                 <i class="fa-solid fa-keyboard q-mr-3xs"></i>
                 Input Card Number Manually
@@ -230,297 +231,189 @@
       </q-card-section>
     </q-card>
 
-    <q-dialog v-model="showProcessingFeeDialog" persistent>
-      <q-card
-        style="min-width: 500px"
-        class="q-pt-2xl q-px-2xl q-pb-xs"
-        :style="{
-          borderRadius: '8px',
-        }"
-      >
-        <q-card-section class="row items-center q-pa-none">
-          <div class="text-2xl text-weight-bold">Edit Merchant Processing Fee</div>
-          <q-space />
-          <q-btn icon="close" flat round dense v-close-popup class="text-gray-300" />
-        </q-card-section>
-
-        <div class="text-xs text-gray-700 q-mt-xs">Only applies to this transaction</div>
-
-        <!-- Fee Value Popup -->
-        <div class="slider-container">
-          <!-- Slider Section -->
-          <div class="q-pb-xl q-px-xl">
-            <div id="slider-popup-container">
-              <!-- NOTE: 20: margin left, 412: slider width, 452: container width -->
-              <div
-                class="fee-popup q-pa-3xs"
-                :style="{
-                  left: `calc(${(activeFee === 'merchant' ? editingProcessingFees.merchant.rate : editingProcessingFees.patient.rate) * (100 / 3.5) * (412 / 452) + (20 * 100) / 452}%)`,
-                }"
-              >
-                <div class="fee-value text-weight-medium text-sm text-gray-900">
-                  {{
-                    (activeFee === 'merchant'
-                      ? editingProcessingFees.merchant.rate
-                      : editingProcessingFees.patient.rate
-                    ).toFixed(2) + '%'
-                  }}
-                </div>
-                <div class="fee-amount text-xss text-gray-700">
-                  ${{
-                    formatAmount(
-                      activeFee === 'merchant' ? editingMerchantFeeAmount : editingPatientFeeAmount,
-                    )
-                  }}
-                </div>
+    <ActionDialog
+      v-model="showProcessingFeeDialog"
+      title="Edit Merchant Processing Fee"
+      subtitle="Only applies to this transaction"
+      actionButton="Update"
+      show-cancel-button
+      @action-click="updateProcessingFee"
+    >
+      <!-- Fee Value Popup -->
+      <div class="slider-container">
+        <!-- Slider Section -->
+        <div class="q-px-xl">
+          <div id="slider-popup-container">
+            <!-- NOTE: 20: margin left, 412: slider width, 452: container width -->
+            <div
+              class="fee-popup q-pa-3xs"
+              :style="{
+                left: `calc(${(activeFee === 'merchant' ? editingProcessingFees.merchant.rate : editingProcessingFees.patient.rate) * (100 / 3.5) * (412 / 452) + (20 * 100) / 452}%)`,
+              }"
+            >
+              <div class="fee-value">
+                {{
+                  (activeFee === 'merchant'
+                    ? editingProcessingFees.merchant.rate
+                    : editingProcessingFees.patient.rate
+                  ).toFixed(2) + '%'
+                }}
+              </div>
+              <div class="fee-amount">
+                ${{
+                  formatAmount(
+                    activeFee === 'merchant' ? editingMerchantFeeAmount : editingPatientFeeAmount,
+                  )
+                }}
               </div>
             </div>
-            <q-slider
-              v-model="editingActiveFeeValue"
-              :min="processingFeeRateRange.min"
-              :max="processingFeeRateRange.max"
-              :step="0.1"
-              color="teal"
-              thumb-color="white"
-              :marker-labels="[
-                { value: processingFeeRateRange.min, label: processingFeeRateRange.min.toString() },
-                {
-                  value: processingFeeRateRange.max,
-                  label: processingFeeRateRange.max.toString() + '%',
-                },
-              ]"
-              class="shadowed-thumb-slider"
-            />
           </div>
+          <q-slider
+            v-model="editingActiveFeeValue"
+            :min="processingFeeRateRange.min"
+            :max="processingFeeRateRange.max"
+            :step="0.1"
+            color="teal"
+            thumb-color="white"
+            :marker-labels="[
+              { value: processingFeeRateRange.min, label: processingFeeRateRange.min.toString() },
+              {
+                value: processingFeeRateRange.max,
+                label: processingFeeRateRange.max.toString() + '%',
+              },
+            ]"
+            class="shadowed-thumb-slider"
+          />
         </div>
+      </div>
 
-        <q-separator horizontal color="gray-50" class="q-my-md" />
+      <q-separator horizontal color="gray-50" class="q-my-md" />
 
-        <!-- Fee Details -->
-        <div class="fee-details q-py-xl">
-          <div class="row items-center q-mb-md">
-            <div class="text-weight-medium text-sm q-mr-3xs">Merchant processing fee</div>
-            <q-input
-              :model-value="formatRate(editingProcessingFees.merchant.rate)"
-              type="text"
-              dense
-              borderless
-              class="rate-input"
-              @focus="activeFee = 'merchant'"
-              @update:model-value="(val) => handleRateInput(String(val || ''), 'merchant')"
-            />
-            <div class="text-gray-700 text-xss q-ml-3xs">/ {{ processingFeeRateRange.max }}%</div>
-            <i class="fa-solid fa-plus text-gray-700 q-mx-5xs" style="opacity: 0.4"></i>
-            <q-input
-              :model-value="editingProcessingFees.merchant.fixed"
-              type="text"
-              dense
-              borderless
-              class="fixed-fee-input"
-              @update:model-value="(val) => handleFixedFeeInput(String(val || ''), 'merchant')"
-            />
-            <div class="text-gray-700 text-xss q-ml-3xs">
-              / ${{ processingFeeFixedRange.max.toFixed(2) }}
-            </div>
-          </div>
-          <div class="row items-center">
-            <div class="text-weight-medium text-sm q-mr-3xs">Patient processing fee</div>
-            <q-input
-              :model-value="formatRate(editingProcessingFees.patient.rate)"
-              type="text"
-              dense
-              borderless
-              class="rate-input"
-              @focus="activeFee = 'patient'"
-              @update:model-value="(val) => handleRateInput(String(val || ''), 'patient')"
-            />
-            <div class="text-gray-700 text-xss q-ml-3xs">/ {{ processingFeeRateRange.max }}%</div>
-            <i class="fa-solid fa-plus text-gray-700 q-mx-5xs" style="opacity: 0.4"></i>
-
-            <q-input
-              :model-value="editingProcessingFees.patient.fixed"
-              type="text"
-              dense
-              borderless
-              class="fixed-fee-input"
-              @update:model-value="(val) => handleFixedFeeInput(String(val || ''), 'patient')"
-            />
-            <div class="text-gray-700 text-xss q-ml-3xs">
-              / ${{ processingFeeFixedRange.max.toFixed(2) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Reset Patient Fee Link -->
-        <div class="text-center q-mb-xl">
-          <q-btn
-            flat
+      <!-- Fee Details -->
+      <div class="fee-details q-py-xl">
+        <div class="row items-center q-mb-md">
+          <div class="text-weight-medium text-sm q-mr-3xs">Merchant processing fee</div>
+          <q-input
+            :model-value="formatRate(editingProcessingFees.merchant.rate)"
+            type="text"
             dense
-            padding="none"
-            class="text-teal-400 underline-btn"
-            label="Set patient processing fee to 0"
-            @click="resetPatientFee"
+            borderless
+            class="rate-input"
+            @focus="activeFee = 'merchant'"
+            @update:model-value="(val) => handleRateInput(String(val || ''), 'merchant')"
           />
+          <div class="text-gray-700 text-xss q-ml-3xs">/ {{ processingFeeRateRange.max }}%</div>
+          <i class="fa-solid fa-plus text-gray-700 q-mx-5xs" style="opacity: 0.4"></i>
+          <q-input
+            :model-value="editingProcessingFees.merchant.fixed"
+            type="text"
+            dense
+            borderless
+            class="fixed-fee-input"
+            @update:model-value="(val) => handleFixedFeeInput(String(val || ''), 'merchant')"
+          />
+          <div class="text-gray-700 text-xss q-ml-3xs">
+            / ${{ processingFeeFixedRange.max.toFixed(2) }}
+          </div>
         </div>
+        <div class="row items-center">
+          <div class="text-weight-medium text-sm q-mr-3xs">Patient processing fee</div>
+          <q-input
+            :model-value="formatRate(editingProcessingFees.patient.rate)"
+            type="text"
+            dense
+            borderless
+            class="rate-input"
+            @focus="activeFee = 'patient'"
+            @update:model-value="(val) => handleRateInput(String(val || ''), 'patient')"
+          />
+          <div class="text-gray-700 text-xss q-ml-3xs">/ {{ processingFeeRateRange.max }}%</div>
+          <i class="fa-solid fa-plus text-gray-700 q-mx-5xs" style="opacity: 0.4"></i>
 
-        <!-- Transaction Summary -->
-        <div class="text-weight-bold text-black text-sm q-pb-2xl text-center">
-          On this ${{ formatAmount(subtotal) }} transaction, you pay ${{
-            formatAmount(editingTotalMerchantFee)
-          }}, and patient pays ${{ formatAmount(editingTotalPatientFee) }}
+          <q-input
+            :model-value="editingProcessingFees.patient.fixed"
+            type="text"
+            dense
+            borderless
+            class="fixed-fee-input"
+            @update:model-value="(val) => handleFixedFeeInput(String(val || ''), 'patient')"
+          />
+          <div class="text-gray-700 text-xss q-ml-3xs">
+            / ${{ processingFeeFixedRange.max.toFixed(2) }}
+          </div>
         </div>
+      </div>
 
-        <q-card-actions align="right" class="q-pt-xs q-pb-none">
-          <q-btn
-            flat
-            no-caps
-            class="text-weight-medium text-gray-600"
-            label="Cancel"
-            v-close-popup
-          />
-          <q-space />
-          <q-btn
-            unelevated
-            no-caps
-            class="bg-orange-400 text-white"
-            :style="{ padding: '8px 16px', borderRadius: '6px' }"
-            label="Update"
-            v-close-popup
-            @click="updateProcessingFee"
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+      <!-- Reset Patient Fee Link -->
+      <div class="text-center q-mb-xl">
+        <q-btn
+          flat
+          dense
+          padding="none"
+          class="text-teal-400 underline-btn"
+          label="Set patient processing fee to 0"
+          @click="resetPatientFee"
+        />
+      </div>
+
+      <!-- Transaction Summary -->
+      <div class="text-weight-bold text-black text-sm q-pb-2xl text-center">
+        On this ${{ formatAmount(subtotal) }} transaction, you pay ${{
+          formatAmount(editingTotalMerchantFee)
+        }}, and patient pays ${{ formatAmount(editingTotalPatientFee) }}
+      </div>
+    </ActionDialog>
+
+    <ActionDialog
+      v-model="showCreditDialog"
+      title="Credit Card Details"
+      :actionButton="`Pay $${formatAmount(total)}`"
+      show-cancel-button
+      show-separator
+    >
+      <template #content>
+        <div class="q-pt-2xl"></div>
+      </template>
+    </ActionDialog>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { deepCopy } from 'src/lib/utils';
 import { ref, computed, nextTick } from 'vue';
+import type { ProcessingFees, Location, Reader, LocationOption, ReaderOption } from 'src/types';
+import { deepCopy } from 'src/lib/utils';
+import ActionDialog from 'src/components/ActionDialog.vue';
+import {
+  DEFAULT_TAX_RATE,
+  PROCESSING_FEE_RATE_RANGE,
+  PROCESSING_FEE_FIXED_RANGE,
+  DEFAULT_PROCESSING_FEE,
+  LOCATIONS,
+  READERS,
+} from 'src/constants';
 
 const description = ref('');
 const amount = ref('');
 const amountInput = ref<HTMLInputElement | null>(null);
 const paymentMethod = ref<'cash' | 'card'>('cash');
 const isInputFocused = ref(false);
+const taxRate = computed(() => {
+  if (selectedLocation.value) {
+    return parseFloat(selectedLocation.value.taxRate);
+  }
+  return DEFAULT_TAX_RATE;
+});
 let cursorPosition = 0;
 
-interface Location {
-  id: number;
-  name: string;
-  taxRate: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-interface Reader {
-  id: number;
-  label: string;
-  readerId: string;
-  status: string;
-  locationId: number;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-interface LocationOption extends Location {
-  label: string;
-  value: number;
-}
-
-interface ReaderOption extends Reader {
-  value: number;
-}
-
-const locations: Location[] = [
-  {
-    id: 48,
-    name: 'New York Clinic',
-    taxRate: '0.04500',
-    createdAt: '2024-01-15T12:00:00Z',
-    updatedAt: '2024-01-15T12:00:00Z',
-    deletedAt: null,
-  },
-  {
-    id: 75,
-    name: 'Los Angeles Clinic',
-    taxRate: '0.04500',
-    createdAt: '2024-03-08T12:00:00Z',
-    updatedAt: '2024-03-08T12:00:00Z',
-    deletedAt: null,
-  },
-];
+const locations = LOCATIONS;
 const locationOptions: LocationOption[] = locations.map((location) => ({
   ...location,
   label: location.name,
   value: location.id,
 }));
 const selectedLocation = ref<Location | null>(locationOptions[0] || null);
-// Device reader options
-const readers: Reader[] = [
-  {
-    id: 23,
-    label: 'Device Reader 01',
-    readerId: 'tmr_00000001582624',
-    status: 'online',
-    locationId: 48,
-    createdAt: '2024-01-20T12:00:00Z',
-    updatedAt: '2024-01-20T12:00:00Z',
-    deletedAt: null,
-  },
-  {
-    id: 27,
-    label: 'Device Reader 02',
-    readerId: 'tmr_00000001582658',
-    status: 'offline',
-    locationId: 48,
-    createdAt: '2024-02-13T12:00:00Z',
-    updatedAt: '2024-02-13T12:00:00Z',
-    deletedAt: null,
-  },
-  {
-    id: 35,
-    label: 'Device Reader 03',
-    readerId: 'tmr_00000001582824',
-    status: 'online',
-    locationId: 48,
-    createdAt: '2024-02-21T12:00:00Z',
-    updatedAt: '2024-02-21T12:00:00Z',
-    deletedAt: null,
-  },
-  {
-    id: 58,
-    label: 'Device Reader 01',
-    readerId: 'tmr_00000001604824',
-    status: 'online',
-    locationId: 75,
-    createdAt: '2024-03-13T12:00:00Z',
-    updatedAt: '2024-03-13T12:00:00Z',
-    deletedAt: null,
-  },
-  {
-    id: 63,
-    label: 'Device Reader 04',
-    readerId: 'tmr_00000001604858',
-    status: 'online',
-    locationId: 48,
-    createdAt: '2024-03-18T12:00:00Z',
-    updatedAt: '2024-03-18T12:00:00Z',
-    deletedAt: null,
-  },
-  {
-    id: 71,
-    label: 'Device Reader 02',
-    readerId: 'tmr_00000001630824',
-    status: 'online',
-    locationId: 75,
-    createdAt: '2024-03-25T12:00:00Z',
-    updatedAt: '2024-03-25T12:00:00Z',
-    deletedAt: null,
-  },
-];
+
+const readers = READERS;
 const readerOptions: ReaderOption[] = readers.map((reader) => ({
   ...reader,
   value: reader.id,
@@ -529,22 +422,13 @@ const filteredReaderOptions = computed(() =>
   readerOptions.filter((reader) => reader.locationId === selectedLocation.value?.id),
 );
 const selectedReader = ref<Reader | null>(filteredReaderOptions.value[0] || null);
+
 // Dialog related variables
 const showProcessingFeeDialog = ref(false);
-const processingFeeRateRange = ref({ min: 0, max: 3.5 });
-const processingFeeFixedRange = ref({ min: 0, max: 0.1 });
+const showCreditDialog = ref(false);
+const processingFeeRateRange = ref(PROCESSING_FEE_RATE_RANGE);
+const processingFeeFixedRange = ref(PROCESSING_FEE_FIXED_RANGE);
 const activeFee = ref<'merchant' | 'patient'>('merchant');
-
-const DEFAULT_PROCESSING_FEE = {
-  merchant: {
-    rate: 1,
-    fixed: '0.05',
-  },
-  patient: {
-    rate: 0,
-    fixed: '0.05',
-  },
-};
 
 const processingFees = ref<ProcessingFees>({ ...DEFAULT_PROCESSING_FEE });
 const editingProcessingFees = ref<ProcessingFees>({ ...DEFAULT_PROCESSING_FEE });
@@ -584,7 +468,7 @@ const editingActiveFeeValue = computed({
 // Computed Properties
 const subtotal = computed(() => parseFloat(amount.value) || 0);
 const tax = computed(() => {
-  const rawTax = subtotal.value * 0.06;
+  const rawTax = subtotal.value * taxRate.value;
   // Round up to 2 decimal places
   return Math.ceil(rawTax * 100) / 100;
 });
@@ -601,7 +485,7 @@ const onlyWithTax = computed(() => subtotal.value + tax.value);
 
 const totalByCash = computed(() => subtotal.value + tax.value);
 
-const totalByCard = computed(() => subtotal.value + tax.value + editingTotalPatientFee.value);
+const totalByCard = computed(() => subtotal.value + tax.value + totalPatientFee.value);
 
 const displayAmount = computed({
   get: () => {
@@ -622,6 +506,10 @@ const editingPatientFeeAmount = computed(() => {
   return (subtotal.value * editingProcessingFees.value.patient.rate) / 100;
 });
 
+const patientFeeAmount = computed(() => {
+  return (subtotal.value * processingFees.value.patient.rate) / 100;
+});
+
 // Total fee calculations including fixed fees
 const editingTotalMerchantFee = computed(() => {
   return (
@@ -633,6 +521,10 @@ const editingTotalPatientFee = computed(() => {
   return (
     editingPatientFeeAmount.value + parseFloat(editingProcessingFees.value.patient.fixed || '0')
   );
+});
+
+const totalPatientFee = computed(() => {
+  return patientFeeAmount.value + parseFloat(processingFees.value.patient.fixed || '0');
 });
 
 const formatDisplayAmount = (value: string): string => {
@@ -754,6 +646,7 @@ const resetPatientFee = (): void => {
 
 // Update processing fee and localStorage
 const updateProcessingFee = (): void => {
+  processingFees.value = deepCopy(editingProcessingFees.value);
   const feesToStore: ProcessingFees = {
     merchant: {
       rate: editingProcessingFees.value.merchant.rate,
@@ -778,6 +671,10 @@ const openProcessingFeeDialog = () => {
   showProcessingFeeDialog.value = true;
 };
 
+const openCreditDialog = () => {
+  showCreditDialog.value = true;
+};
+
 // Format rate for display
 const formatRate = (value: number): string => {
   return value.toFixed(2);
@@ -795,17 +692,6 @@ const handleRateInput = (value: string, type: 'merchant' | 'patient'): void => {
     }
   }
 };
-
-interface ProcessingFees {
-  merchant: {
-    rate: number;
-    fixed: string;
-  };
-  patient: {
-    rate: number;
-    fixed: string;
-  };
-}
 </script>
 
 <style lang="sass">
@@ -989,15 +875,15 @@ interface ProcessingFees {
     display: none
 
 .reader-select
-  :deep(.q-field__control)
-    background: var(--gray-50)
-    min-height: 40px
-    border-radius: 8px
-  :deep(.q-field__native)
-    padding: 0
-    color: var(--gray-900)
-    font-size: var(--font-size-sm)
-    font-weight: 500
+  .q-field__inner
+    .q-field__control
+      height: 56px
+      min-height: 56px
+      border-radius: 8px 8px 0 0
+      .q-field__control-container .q-field__native
+        font-weight: 500
+        font-size: 15px
+        color: black
 
 .q-select
   .q-select__dropdown-icon
@@ -1009,7 +895,7 @@ interface ProcessingFees {
 // Dialog Custom Styles
 .slider-container
   position: relative
-  padding-top: 85px
+  padding-top: 60px
 
 .fee-popup
   position: absolute
@@ -1018,7 +904,7 @@ interface ProcessingFees {
   border-radius: 12px
   padding: 8px
   box-shadow: 0px 4px 6px -2px rgba(16, 24, 40, 0.05), 0px 12px 16px -4px rgba(16, 24, 40, 0.1)
-  top: 0
+  top: 12px
   z-index: 1
   &:after
     content: ''
@@ -1032,17 +918,18 @@ interface ProcessingFees {
     box-shadow: 4px 4px 8px -4px rgba(16, 24, 40, 0.08)
 
 .fee-value
-  font-size: 20px
-  line-height: 28px
-  font-weight: 600
+  font-size: 14px
+  line-height: 100%
+  font-weight: 500
   color: var(--gray-900)
   text-align: center
   margin-bottom: 2px
 
 .fee-amount
-  font-size: 14px
-  line-height: 20px
-  color: var(--gray-600)
+  font-size: 10px
+  line-height: 100%
+  font-weight: 400
+  color: var(--gray-700)
   text-align: center
 
 .fee-rate
