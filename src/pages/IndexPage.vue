@@ -152,13 +152,17 @@
               </div>
               <div class="text-xl text-green-500 text-weight-bold">${{ formatAmount(total) }}</div>
             </div>
+
+            <div v-if="warningMessage" class="text-negative text-caption q-mx-md q-mb-md">
+              {{ warningMessage }}
+            </div>
           </q-card-section>
 
           <q-separator horizontal />
 
           <!-- Location Section -->
           <q-card-section class="location-section">
-            <div class="row items-center no-wrap q-mb-sm">
+            <div class="row items-center no-wrap q-mb-xs">
               <q-select
                 v-model="selectedLocation"
                 :options="locationOptions"
@@ -181,6 +185,7 @@
                 label="Device Reader"
                 v-model="selectedReader"
                 :options="filteredReaderOptions"
+                :option-disable="(opt) => (Object(opt) === opt ? opt.status === 'offline' : true)"
                 class="reader-select q-mb-md"
                 filled
                 dense
@@ -188,6 +193,20 @@
                 map-options
                 borderless
               >
+                <template v-slot:option="{ itemProps, opt }">
+                  <q-item v-bind="itemProps">
+                    <q-item-section side>
+                      <i
+                        v-if="opt.status === 'online'"
+                        class="fa-solid fa-circle-dot text-green-500 text-md"
+                      ></i>
+                      <i v-else class="fa-solid fa-circle-xmark text-gray-500 text-md"></i>
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ opt.label }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
                 <template v-slot:append>
                   <i class="fa-solid fa-chevron-down text-gray-500 text-xs"></i>
                 </template>
@@ -200,6 +219,7 @@
                 class="full-width q-mb-sm payment-btn"
                 padding="sm"
                 @click="openReaderDialog"
+                :disable="!isAmountValid"
               >
                 <i class="fa-solid fa-tablet q-mr-3xs"></i>
                 Initiate Payment on Reader
@@ -210,6 +230,7 @@
                 class="full-width bg-orange-50 text-orange-500 payment-btn"
                 padding="sm"
                 @click="openCreditDialog"
+                :disable="!isAmountValid"
               >
                 <i class="fa-solid fa-keyboard q-mr-3xs"></i>
                 Input Card Number Manually
@@ -223,6 +244,7 @@
               color="orange-500"
               class="full-width log-payment-btn"
               padding="sm"
+              :disable="!isAmountValid"
             >
               <i class="fa-solid fa-money-bill-wave q-mr-3xs"></i>
               Log Payment
@@ -830,6 +852,19 @@ const startProcessingCountdown = () => {
     }
   }, 1000);
 };
+
+// Add minimum amount constant
+const MINIMUM_AMOUNT = 0.5;
+
+// Add computed property for amount validation
+const isAmountValid = computed(() => total.value >= MINIMUM_AMOUNT);
+
+// Add warning message computed
+const warningMessage = computed(() =>
+  !isAmountValid.value && subtotal.value !== 0
+    ? `*Total amount falls below the required minimum of $${MINIMUM_AMOUNT.toFixed(2)}`
+    : '',
+);
 </script>
 
 <style lang="sass">
@@ -1016,6 +1051,9 @@ const startProcessingCountdown = () => {
     display: none
 
 .reader-select
+  &.q-field--highlighted .q-field__append
+    transform: rotate(180deg)
+    transition: transform 0.3s ease
   .q-field__inner
     .q-field__control
       height: 56px
@@ -1025,6 +1063,12 @@ const startProcessingCountdown = () => {
         font-weight: 500
         font-size: 15px
         color: black
+  .q-field__append
+    height: 100%
+    padding: 0
+    display: flex
+    align-items: center
+    justify-content: center
 
 .q-select
   .q-select__dropdown-icon
@@ -1150,4 +1194,23 @@ const startProcessingCountdown = () => {
     font-size: 15px
     font-weight: 500
     color: black
+
+.q-menu
+  border-radius: 6px
+  border: 1px solid var(--gray-100)
+  padding: 8px
+  .q-item
+    border-radius: 6px
+  .q-item__section--side
+    padding-right: 12px
+  .q-item .q-item__label
+    font-size: 14px
+    font-weight: 500
+    color: var(--gray-800)
+  .q-item.disabled .q-item__label
+    color: var(--gray-400)
+  .q-virtual-scroll__content > .q-item.q-manual-focusable--focused > .q-focus-helper
+    background: var(--gray-50)
+    opacity: 1
+    z-index: -1
 </style>
