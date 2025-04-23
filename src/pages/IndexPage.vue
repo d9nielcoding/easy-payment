@@ -268,24 +268,35 @@
         <div class="q-px-xl">
           <div id="slider-popup-container">
             <!-- NOTE: 20: margin left, 412: slider width, 452: container width -->
-            <div
-              class="fee-popup q-pa-3xs"
-              :style="{
-                left: `calc(${(activeFee === 'merchant' ? editingProcessingFees.merchant.rate : editingProcessingFees.patient.rate) * (100 / 3.5) * (412 / 452) + (20 * 100) / 452}%)`,
-              }"
-            >
+            <div class="fee-popup q-pa-3xs" :style="feePopupStyle">
               <div class="fee-value">
                 {{
-                  (activeFee === 'merchant'
-                    ? editingProcessingFees.merchant.rate
-                    : editingProcessingFees.patient.rate
-                  ).toFixed(2) + '%'
+                  activeFee.includes('rate')
+                    ? (activeFee === 'merchant-rate'
+                        ? editingProcessingFees.merchant.rate
+                        : editingProcessingFees.patient.rate
+                      ).toFixed(2) + '%'
+                    : parseFloat(
+                        activeFee === 'merchant-fixed'
+                          ? editingProcessingFees.merchant.fixed
+                          : editingProcessingFees.patient.fixed,
+                      ).toFixed(2)
                 }}
               </div>
               <div class="fee-amount">
                 ${{
                   formatAmount(
-                    activeFee === 'merchant' ? editingMerchantFeeAmount : editingPatientFeeAmount,
+                    activeFee.includes('rate')
+                      ? activeFee === 'merchant-rate'
+                        ? editingMerchantFeeAmount
+                        : editingPatientFeeAmount
+                      : parseFloat(
+                          String(
+                            activeFee === 'merchant-fixed'
+                              ? editingMerchantFeeAmount
+                              : editingPatientFeeAmount,
+                          ),
+                        ),
                   )
                 }}
               </div>
@@ -293,16 +304,31 @@
           </div>
           <q-slider
             v-model="editingActiveFeeValue"
-            :min="processingFeeRateRange.min"
-            :max="processingFeeRateRange.max"
-            :step="0.1"
+            :min="
+              activeFee.includes('rate') ? processingFeeRateRange.min : processingFeeFixedRange.min
+            "
+            :max="
+              activeFee.includes('rate') ? processingFeeRateRange.max : processingFeeFixedRange.max
+            "
+            :step="activeFee.includes('rate') ? 0.1 : 0.01"
             color="teal"
             thumb-color="white"
             :marker-labels="[
-              { value: processingFeeRateRange.min, label: processingFeeRateRange.min.toString() },
               {
-                value: processingFeeRateRange.max,
-                label: processingFeeRateRange.max.toString() + '%',
+                value: activeFee.includes('rate')
+                  ? processingFeeRateRange.min
+                  : processingFeeFixedRange.min,
+                label: activeFee.includes('rate')
+                  ? processingFeeRateRange.min.toString()
+                  : '$' + processingFeeFixedRange.min,
+              },
+              {
+                value: activeFee.includes('rate')
+                  ? processingFeeRateRange.max
+                  : processingFeeFixedRange.max,
+                label: activeFee.includes('rate')
+                  ? processingFeeRateRange.max.toString() + '%'
+                  : '$' + processingFeeFixedRange.max.toFixed(2),
               },
             ]"
             class="shadowed-thumb-slider"
@@ -322,7 +348,7 @@
             dense
             borderless
             class="rate-input"
-            @focus="activeFee = 'merchant'"
+            @focus="activeFee = 'merchant-rate'"
             @update:model-value="(val) => handleRateInput(String(val || ''), 'merchant')"
           />
           <div class="text-gray-700 text-xss q-ml-3xs">/ {{ processingFeeRateRange.max }}%</div>
@@ -333,6 +359,7 @@
             dense
             borderless
             class="fixed-fee-input"
+            @focus="activeFee = 'merchant-fixed'"
             @update:model-value="(val) => handleFixedFeeInput(String(val || ''), 'merchant')"
           />
           <div class="text-gray-700 text-xss q-ml-3xs">
@@ -347,7 +374,7 @@
             dense
             borderless
             class="rate-input"
-            @focus="activeFee = 'patient'"
+            @focus="activeFee = 'patient-rate'"
             @update:model-value="(val) => handleRateInput(String(val || ''), 'patient')"
           />
           <div class="text-gray-700 text-xss q-ml-3xs">/ {{ processingFeeRateRange.max }}%</div>
@@ -359,6 +386,7 @@
             dense
             borderless
             class="fixed-fee-input"
+            @focus="activeFee = 'patient-fixed'"
             @update:model-value="(val) => handleFixedFeeInput(String(val || ''), 'patient')"
           />
           <div class="text-gray-700 text-xss q-ml-3xs">
@@ -546,7 +574,9 @@ const processingFeeFixedRange = ref({
   min: 0,
   max: organization.totalProcessingFeeFixed / 100,
 });
-const activeFee = ref<'merchant' | 'patient'>('merchant');
+const activeFee = ref<'merchant-rate' | 'patient-rate' | 'merchant-fixed' | 'patient-fixed'>(
+  'merchant-rate',
+);
 
 const processingFees = ref<ProcessingFees>({ ...DEFAULT_PROCESSING_FEE });
 const editingProcessingFees = ref<ProcessingFees>({ ...DEFAULT_PROCESSING_FEE });
@@ -568,25 +598,148 @@ const initializeFees = (): void => {
 // Initialize on component mount
 initializeFees();
 
-// Modify the editingActiveFeeValue computed property
-const editingActiveFeeValue = computed({
-  get: () =>
-    activeFee.value === 'merchant'
+// Update the fee popup style calculation
+const feePopupStyle = computed(() => {
+  const value = activeFee.value.includes('rate')
+    ? activeFee.value === 'merchant-rate'
       ? editingProcessingFees.value.merchant.rate
-      : editingProcessingFees.value.patient.rate,
+      : editingProcessingFees.value.patient.rate
+    : parseFloat(
+        activeFee.value === 'merchant-fixed'
+          ? editingProcessingFees.value.merchant.fixed
+          : editingProcessingFees.value.patient.fixed,
+      );
+
+  const max = activeFee.value.includes('rate')
+    ? processingFeeRateRange.value.max
+    : processingFeeFixedRange.value.max;
+
+  return {
+    left: `calc(${value * (100 / max) * (412 / 452) + (20 * 100) / 452}%)`,
+  };
+});
+
+// Update the editingActiveFeeValue computed property
+const editingActiveFeeValue = computed({
+  get: () => {
+    if (activeFee.value === 'merchant-rate') {
+      return editingProcessingFees.value.merchant.rate;
+    } else if (activeFee.value === 'patient-rate') {
+      return editingProcessingFees.value.patient.rate;
+    } else if (activeFee.value === 'merchant-fixed') {
+      return parseFloat(editingProcessingFees.value.merchant.fixed || '0');
+    } else {
+      return parseFloat(editingProcessingFees.value.patient.fixed || '0');
+    }
+  },
   set: (value: number) => {
     const totalRate = processingFeeRateRange.value.max;
-    const clampedValue = Math.min(Math.max(value, 0), totalRate);
+    const totalFixed = processingFeeFixedRange.value.max;
+    const clampedValue = Math.min(
+      Math.max(value, 0),
+      activeFee.value.includes('rate') ? totalRate : totalFixed,
+    );
 
-    if (activeFee.value === 'merchant') {
+    if (activeFee.value === 'merchant-rate') {
       editingProcessingFees.value.merchant.rate = parseFloat(clampedValue.toFixed(3));
       editingProcessingFees.value.patient.rate = parseFloat((totalRate - clampedValue).toFixed(3));
-    } else {
+    } else if (activeFee.value === 'patient-rate') {
       editingProcessingFees.value.patient.rate = parseFloat(clampedValue.toFixed(3));
       editingProcessingFees.value.merchant.rate = parseFloat((totalRate - clampedValue).toFixed(3));
+    } else if (activeFee.value === 'merchant-fixed') {
+      editingProcessingFees.value.merchant.fixed = clampedValue.toFixed(2);
+      editingProcessingFees.value.patient.fixed = (totalFixed - clampedValue).toFixed(2);
+    } else {
+      editingProcessingFees.value.patient.fixed = clampedValue.toFixed(2);
+      editingProcessingFees.value.merchant.fixed = (totalFixed - clampedValue).toFixed(2);
     }
   },
 });
+
+// Fee amount calculations
+const editingMerchantFeeAmount = computed(() => {
+  return (subtotal.value * editingProcessingFees.value.merchant.rate) / 100;
+});
+
+const editingPatientFeeAmount = computed(() => {
+  return (subtotal.value * editingProcessingFees.value.patient.rate) / 100;
+});
+
+const editingTotalMerchantFee = computed(() => {
+  return (
+    editingMerchantFeeAmount.value + parseFloat(editingProcessingFees.value.merchant.fixed || '0')
+  );
+});
+
+const editingTotalPatientFee = computed(() => {
+  return (
+    editingPatientFeeAmount.value + parseFloat(editingProcessingFees.value.patient.fixed || '0')
+  );
+});
+
+// Reset patient fee and update localStorage
+const resetPatientFee = (): void => {
+  editingProcessingFees.value.patient.rate = 0;
+  editingProcessingFees.value.patient.fixed = '0.00';
+  // Update merchant fees to take the full amount
+  editingProcessingFees.value.merchant.rate = processingFeeRateRange.value.max;
+  editingProcessingFees.value.merchant.fixed = processingFeeFixedRange.value.max.toFixed(2);
+};
+
+// Update processing fee and localStorage
+const updateProcessingFee = (): void => {
+  processingFees.value = deepCopy(editingProcessingFees.value);
+  const feesToStore: ProcessingFees = {
+    merchant: {
+      rate: editingProcessingFees.value.merchant.rate,
+      fixed: editingProcessingFees.value.merchant.fixed,
+    },
+    patient: {
+      rate: editingProcessingFees.value.patient.rate,
+      fixed: editingProcessingFees.value.patient.fixed,
+    },
+  };
+
+  try {
+    localStorage.setItem('processingFees', JSON.stringify(feesToStore));
+  } catch (error) {
+    console.error('Error saving fees:', error);
+  }
+};
+
+// Handle rate input changes
+const handleRateInput = (value: string, type: 'merchant' | 'patient'): void => {
+  const numValue = parseFloat(value);
+  if (!isNaN(numValue)) {
+    const totalRate = processingFeeRateRange.value.max;
+    const clampedValue = Math.min(Math.max(numValue, 0), totalRate);
+
+    if (type === 'merchant') {
+      editingProcessingFees.value.merchant.rate = parseFloat(clampedValue.toFixed(2));
+      editingProcessingFees.value.patient.rate = parseFloat((totalRate - clampedValue).toFixed(2));
+    } else {
+      editingProcessingFees.value.patient.rate = parseFloat(clampedValue.toFixed(2));
+      editingProcessingFees.value.merchant.rate = parseFloat((totalRate - clampedValue).toFixed(2));
+    }
+  }
+};
+
+// Handle fixed fee input changes
+const handleFixedFeeInput = (value: string, type: 'merchant' | 'patient'): void => {
+  const numValue = parseFloat(value);
+  if (!isNaN(numValue)) {
+    const totalFixed = processingFeeFixedRange.value.max;
+    const clampedValue = Math.min(Math.max(numValue, 0), totalFixed);
+
+    if (type === 'merchant') {
+      editingProcessingFees.value.merchant.fixed = clampedValue.toFixed(2);
+      editingProcessingFees.value.patient.fixed = (totalFixed - clampedValue).toFixed(2);
+    } else {
+      editingProcessingFees.value.patient.fixed = clampedValue.toFixed(2);
+      editingProcessingFees.value.merchant.fixed = (totalFixed - clampedValue).toFixed(2);
+    }
+  }
+};
 
 // Computed Properties
 const subtotal = computed(() => parseFloat(amount.value) || 0);
@@ -620,30 +773,8 @@ const displayAmount = computed({
   },
 });
 
-// Fee amount calculations
-const editingMerchantFeeAmount = computed(() => {
-  return (subtotal.value * editingProcessingFees.value.merchant.rate) / 100;
-});
-
-const editingPatientFeeAmount = computed(() => {
-  return (subtotal.value * editingProcessingFees.value.patient.rate) / 100;
-});
-
 const patientFeeAmount = computed(() => {
   return (subtotal.value * processingFees.value.patient.rate) / 100;
-});
-
-// Total fee calculations including fixed fees
-const editingTotalMerchantFee = computed(() => {
-  return (
-    editingMerchantFeeAmount.value + parseFloat(editingProcessingFees.value.merchant.fixed || '0')
-  );
-});
-
-const editingTotalPatientFee = computed(() => {
-  return (
-    editingPatientFeeAmount.value + parseFloat(editingProcessingFees.value.patient.fixed || '0')
-  );
 });
 
 const totalPatientFee = computed(() => {
@@ -744,52 +875,6 @@ const resetPayment = () => {
   description.value = '';
 };
 
-// Handle fixed fee input changes
-const handleFixedFeeInput = (value: string, type: 'merchant' | 'patient'): void => {
-  const numValue = parseFloat(value);
-  if (!isNaN(numValue)) {
-    const totalFixed = processingFeeFixedRange.value.max;
-    const clampedValue = Math.min(Math.max(numValue, 0), totalFixed);
-    const formattedValue = clampedValue.toFixed(2);
-    const otherValue = (totalFixed - clampedValue).toFixed(2);
-
-    if (type === 'merchant') {
-      editingProcessingFees.value.merchant.fixed = formattedValue;
-      editingProcessingFees.value.patient.fixed = otherValue;
-    } else {
-      editingProcessingFees.value.patient.fixed = formattedValue;
-      editingProcessingFees.value.merchant.fixed = otherValue;
-    }
-  }
-};
-
-// Reset patient fee and update localStorage
-const resetPatientFee = (): void => {
-  editingProcessingFees.value.patient.rate = 0;
-  editingProcessingFees.value.patient.fixed = '0.00';
-};
-
-// Update processing fee and localStorage
-const updateProcessingFee = (): void => {
-  processingFees.value = deepCopy(editingProcessingFees.value);
-  const feesToStore: ProcessingFees = {
-    merchant: {
-      rate: editingProcessingFees.value.merchant.rate,
-      fixed: editingProcessingFees.value.merchant.fixed,
-    },
-    patient: {
-      rate: editingProcessingFees.value.patient.rate,
-      fixed: editingProcessingFees.value.patient.fixed,
-    },
-  };
-
-  try {
-    localStorage.setItem('processingFees', JSON.stringify(feesToStore));
-  } catch (error) {
-    console.error('Error saving fees:', error);
-  }
-};
-
 // Open edit dialog
 const openProcessingFeeDialog = () => {
   editingProcessingFees.value = deepCopy(processingFees.value);
@@ -808,23 +893,6 @@ const openReaderDialog = () => {
 // Format rate for display
 const formatRate = (value: number): string => {
   return value.toFixed(2);
-};
-
-// Handle rate input changes
-const handleRateInput = (value: string, type: 'merchant' | 'patient'): void => {
-  const numValue = parseFloat(value);
-  if (!isNaN(numValue)) {
-    const totalRate = processingFeeRateRange.value.max;
-    const clampedValue = Math.min(Math.max(numValue, 0), totalRate);
-
-    if (type === 'merchant') {
-      editingProcessingFees.value.merchant.rate = parseFloat(clampedValue.toFixed(2));
-      editingProcessingFees.value.patient.rate = parseFloat((totalRate - clampedValue).toFixed(2));
-    } else {
-      editingProcessingFees.value.patient.rate = parseFloat(clampedValue.toFixed(2));
-      editingProcessingFees.value.merchant.rate = parseFloat((totalRate - clampedValue).toFixed(2));
-    }
-  }
 };
 
 // Add to script section after other refs
