@@ -431,11 +431,7 @@
             margin: '0 auto',
           }"
         >
-          <img
-            src="/src/assets/images/card-reader.svg"
-            style="width: 120px; height: 120px"
-            class="q-mb-xl"
-          />
+          <img :src="cardReaderImage" style="width: 120px; height: 120px" class="q-mb-xl" />
 
           <div class="row items-center justify-center q-pb-3xs">
             <i class="fa-solid fa-eye q-mr-3xs"></i>
@@ -520,6 +516,7 @@ import { ref, computed, nextTick } from 'vue';
 import type { ProcessingFees, Location, Reader, LocationOption, ReaderOption } from 'src/types';
 import { deepCopy } from 'src/lib/utils';
 import ActionDialog from 'src/components/ActionDialog.vue';
+import cardReaderImage from 'src/assets/images/card-reader.svg';
 import {
   DEFAULT_TAX_RATE,
   DEFAULT_PROCESSING_FEE,
