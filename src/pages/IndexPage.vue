@@ -199,6 +199,7 @@
                 color="orange-500"
                 class="full-width q-mb-sm payment-btn"
                 padding="sm"
+                @click="openReaderDialog"
               >
                 <i class="fa-solid fa-tablet q-mr-3xs"></i>
                 Initiate Payment on Reader
@@ -365,6 +366,50 @@
     </ActionDialog>
 
     <ActionDialog
+      v-model="showReaderDialog"
+      no-header
+      actionButton="Process Payment"
+      show-cancel-button
+      show-separator
+    >
+      <template #content>
+        <div
+          class="reader-dialog text-center"
+          :style="{
+            padding: '40px 0',
+            maxWidth: '452px',
+            margin: '0 auto',
+          }"
+        >
+          <img
+            src="/src/assets/images/card-reader.svg"
+            style="width: 120px; height: 120px"
+            class="q-mb-xl"
+          />
+
+          <div class="row items-center justify-center q-pb-3xs">
+            <i class="fa-solid fa-eye q-mr-3xs"></i>
+            <div class="text-md text-weight-bold text-black">Review Details with Patient</div>
+          </div>
+          <div class="text-sm text-weight-regular text-gray-700 q-mb-2xl">
+            Review details of this transaction with the customer on the device reader. If everything
+            looks good, proceed to process payment.
+          </div>
+
+          <div
+            class="bg-teal-50 text-teal-700 row items-center justify-center text-weight-medium q-mb-5xs"
+            :style="{ height: '41px', borderRadius: '4px' }"
+          >
+            Auto-Processing in
+            <span class="text-weight-bold q-ml-4xs">{{ processingCountdown }}s</span>
+          </div>
+
+          <div class="text-gray-700" style="font-size: 9px">Or click "Process Payment" below</div>
+        </div>
+      </template>
+    </ActionDialog>
+
+    <ActionDialog
       v-model="showCreditDialog"
       title="Credit Card Details"
       :actionButton="`Pay $${formatAmount(total)}`"
@@ -468,6 +513,7 @@ const selectedReader = ref<Reader | null>(filteredReaderOptions.value[0] || null
 // Dialog related variables
 const showProcessingFeeDialog = ref(false);
 const showCreditDialog = ref(false);
+const showReaderDialog = ref(false);
 const processingFeeRateRange = ref(PROCESSING_FEE_RATE_RANGE);
 const processingFeeFixedRange = ref(PROCESSING_FEE_FIXED_RANGE);
 const activeFee = ref<'merchant' | 'patient'>('merchant');
@@ -717,6 +763,11 @@ const openCreditDialog = () => {
   showCreditDialog.value = true;
 };
 
+const openReaderDialog = () => {
+  showReaderDialog.value = true;
+  startProcessingCountdown();
+};
+
 // Format rate for display
 const formatRate = (value: number): string => {
   return value.toFixed(2);
@@ -744,6 +795,22 @@ const creditCard = ref({
   country: 'United States',
   zip: '',
 });
+
+// Add after other refs
+const processingCountdown = ref(5);
+
+// Add after other functions
+const startProcessingCountdown = () => {
+  processingCountdown.value = 5;
+  const timer = setInterval(() => {
+    processingCountdown.value--;
+    if (processingCountdown.value <= 0) {
+      clearInterval(timer);
+      showReaderDialog.value = false;
+      // TODO: Handle payment processing
+    }
+  }, 1000);
+};
 </script>
 
 <style lang="sass">
@@ -784,6 +851,9 @@ const creditCard = ref({
   min-height: 40px
   height: 40px
   background: var(--gray-100)
+  .q-field__native
+    color: black
+    font-weight: 500
   .q-field__inner
     .q-field__control
       border-radius: 8px

@@ -56,7 +56,7 @@
 <script setup lang="ts">
 defineProps<{
   modelValue: boolean;
-  title: string;
+  title?: string;
   subtitle?: string;
   actionButton?: string;
   onActionClick?: () => void;
