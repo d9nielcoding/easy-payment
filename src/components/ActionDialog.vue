@@ -26,12 +26,13 @@
       <q-separator v-if="showSeparator" />
 
       <slot name="footer" v-if="!noFooter">
-        <q-card-actions align="right" class="q-pt-xs q-pb-none q-pb-xs q-px-2xl">
+        <q-card-actions align="right" class="q-py-xs q-px-2xl">
           <q-btn
             v-if="showCancelButton"
             flat
             no-caps
             class="cancel-btn"
+            :style="{ padding: '8px 16px', borderRadius: '6px' }"
             label="Cancel"
             v-close-popup
           />

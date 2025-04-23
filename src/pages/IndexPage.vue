@@ -372,7 +372,49 @@
       show-separator
     >
       <template #content>
-        <div class="q-pt-2xl"></div>
+        <div class="credit-card-dialog q-py-2xl">
+          <!-- Name on Card -->
+          <q-input
+            v-model="creditCard.name"
+            label="Name on Card"
+            class="q-mb-3xs"
+            filled
+            label-color="gray-600"
+          />
+
+          <!-- Card Number -->
+          <q-input v-model="creditCard.number" label="Card Number" class="q-mb-3xs" filled />
+
+          <div class="row q-mb-3xs">
+            <!-- Expiration Date -->
+            <div class="col">
+              <q-input v-model="creditCard.expiry" label="Expiration Date" filled />
+            </div>
+            <q-space style="width: 12px" />
+            <!-- CVC -->
+            <div class="col">
+              <q-input v-model="creditCard.cvc" label="CVC" filled />
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Country -->
+            <div class="col">
+              <q-select
+                v-model="creditCard.country"
+                :options="['United States']"
+                label="Country"
+                filled
+              />
+            </div>
+
+            <q-space style="width: 12px" />
+            <!-- ZIP -->
+            <div class="col">
+              <q-input v-model="creditCard.zip" label="ZIP" filled />
+            </div>
+          </div>
+        </div>
       </template>
     </ActionDialog>
   </q-page>
@@ -692,6 +734,16 @@ const handleRateInput = (value: string, type: 'merchant' | 'patient'): void => {
     }
   }
 };
+
+// Add to script section after other refs
+const creditCard = ref({
+  name: '',
+  number: '',
+  expiry: '',
+  cvc: '',
+  country: 'United States',
+  zip: '',
+});
 </script>
 
 <style lang="sass">
@@ -999,4 +1051,14 @@ const handleRateInput = (value: string, type: 'merchant' | 'patient'): void => {
 .shadowed-thumb-slider
   .q-slider__thumb
     filter: drop-shadow(4px 4px 6px rgba(0, 0, 0, 0.3));
+
+.credit-card-dialog
+  .q-field__label
+    font-size: 15px
+    font-weight: 500
+    color: var(--gray-600)
+  .q-field__native
+    font-size: 15px
+    font-weight: 500
+    color: black
 </style>
